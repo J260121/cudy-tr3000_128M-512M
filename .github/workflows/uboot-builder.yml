@@ -29,7 +29,7 @@ jobs:
       - name: Checkout Projects
         uses: actions/checkout@main
 
-      - name: ⚙️ Initialization Environment
+      - name: Initialization Environment
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
@@ -47,7 +47,7 @@ jobs:
           sudo chown $USER:$USER /mnt/build_wrt
           sudo ln -s /mnt/build_wrt $GITHUB_WORKSPACE/wrt
 
-      - name: ⬇️ Clone Code
+      - name: Clone Code
         run: |
           git clone --depth=1 --single-branch --branch $WRT_BRANCH $WRT_REPO ./wrt/
 
@@ -56,7 +56,6 @@ jobs:
           sed -i "5s/UBOOT_DIR=.*/UBOOT_DIR=${{matrix.WRT_MTK}}/" ./wrt/build.sh
           sed -i "7s/ATF_DIR=.*/ATF_DIR=${{matrix.WRT_ATF}}/" ./wrt/build.sh
 
-          # 收集 uboot 配置并生成 Uboots.txt make BOARD=ruijie_rg-x60-new VERSION=SP1 SIMG=1
           declare -A lines_map
           while IFS= read -r f; do
             [[ $(basename "$f") =~ ^(mt798[16])_(.*)_defconfig$ ]] || continue
@@ -69,11 +68,10 @@ jobs:
             fi
           done < <(find ./wrt/uboot-mtk-*/configs -type f -name 'mt798*defconfig' | grep -iE 'mt798[16]_' | grep -ivE 'rfb|fpga')
 
-          # 输出 Uboots.txt
           printf "%s\n" "${lines_map[@]}" | sort > ./Uboots.txt
           sed -i 's/_multi_layout//' ./Uboots.txt
           cat ./Uboots.txt
-          # 生成 TYPE_7981 和 TYPE_7986（按 SOC 分类，BOARD 大写 + 排序）
+
           for soc in 7981 7986; do
             boards=$(awk -v s="SOC=mt$soc" '$0 ~ s {
               for (i=1; i<=NF; i++) if ($i ~ /^BOARD=/) {
@@ -82,7 +80,7 @@ jobs:
             }' ./Uboots.txt | sort -u | xargs)
             eval "TYPE_$soc=\"$boards\""
           done
-          # 检查权限
+
           mv -f Uboots.txt Uboots.sh
           find ./ -maxdepth 3 -type f -iregex ".*\(txt\|sh\)$" -exec dos2unix {} \; -exec chmod +x {} \;
 
@@ -107,13 +105,8 @@ jobs:
           du -h --max-depth=1
           echo "======================="
           
-      - name: 🛠️ Compile Firmware
-        run: |
-          cd ./wrt/
-          SOC=mt7981 BOARD=cudy_tr3000-v1-256mb VERSION=2025 MULTI_LAYOUT=0 ./build.sh
-          SOC=mt7981 BOARD=cudy_tr3000-v1 VERSION=2025 MULTI_LAYOUT=1 ./build.sh
 
-      - name: 📦 Package Firmware
+      - name: Package Firmware
         run: |
           cd ./wrt/ && mkdir -p ./upload/
 
@@ -128,7 +121,7 @@ jobs:
             mv -f "$FILE" "./upload/$NEW_FILE"
           done
 
-      - name: 📌 Generate release tag
+      - name: Generate release tag
         id: tag
         run: |
           BUILD_TIME=$(date +"%Y%m%d-%H%M")
