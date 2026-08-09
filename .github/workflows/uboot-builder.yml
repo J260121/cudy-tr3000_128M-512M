@@ -64,7 +64,7 @@ jobs:
             if [[ $rest == *_multi_layout ]]; then
               lines_map["$rest"]="SOC=$soc BOARD=$rest MULTI_LAYOUT=1 VERSION=2025 ./build.sh"
             else
-              lines_map["$rest"]="SOC=$soc BOARD=$rest VERSION=2025 ./build.sh"
+              lines_map["$rest"]="SOC=$soc BOARD=$rest MULTI_LAYOUT=0 VERSION=2025 ./build.sh"
             fi
           done < <(find ./wrt/uboot-mtk-*/configs -type f -name 'mt798*defconfig' | grep -iE 'mt798[16]_' | grep -ivE 'rfb|fpga')
 
@@ -120,7 +120,8 @@ jobs:
             NEW_FILE="${NAME}_${WRT_DATE}.${EXT}"
             mv -f "$FILE" "./upload/$NEW_FILE"
           done
-
+          zip -r ./upload/mt798X-Uboot_"$WRT_DATE".zip ./upload/*.*
+            
       - name: Generate release tag
         id: tag
         run: |
@@ -146,7 +147,7 @@ jobs:
 
           ## 🚧 Notice
 
-          该固件为 DHCP uboot, 128M uboot 为三分区布局，支持原厂 ubi 大小 64MB，扩容 ubi 分区 112MB，最大 ubi 分区 122MB，256M uboot 为单分区布局。
+          该固件为 DHCP uboot
 
           ---
 
@@ -155,7 +156,7 @@ jobs:
 
           echo "status=success" >> $GITHUB_OUTPUT
 
-      - name: 📤 Upload firmware to release
+      - name: Upload firmware to release
         uses: softprops/action-gh-release@v2
         if: steps.tag.outputs.status == 'success' && !cancelled()
         env:
