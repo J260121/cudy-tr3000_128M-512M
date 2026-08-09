@@ -53,6 +53,8 @@ jobs:
 
       - name: Compile Prepare
         run: |
+          echo ${{matrix.WRT_MTK}}
+          echo ${{matrix.WRT_ATF}}
           sed -i "5s/UBOOT_DIR=.*/UBOOT_DIR=${{matrix.WRT_MTK}}/" ./wrt/build.sh
           sed -i "7s/ATF_DIR=.*/ATF_DIR=${{matrix.WRT_ATF}}/" ./wrt/build.sh
 
