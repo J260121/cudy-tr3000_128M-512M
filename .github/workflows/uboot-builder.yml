@@ -16,10 +16,10 @@ on:
 
 env:
   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-  WRT_REPO: https://github.com/weekdaycare/bl-mt798x-dhcpd
+  WRT_REPO: https://github.com/J260121/mt798x-dhcpd-By_Yu.git
   WRT_BRANCH: ${{ github.event.inputs.branch }}
   PRERELEASE: ${{ github.event.inputs.prerelease }}
-
+  #https://github.com/weekdaycare/bl-mt798x-dhcpd
 permissions: write-all
 
 jobs:
@@ -50,6 +50,12 @@ jobs:
       - name: ⬇️ Clone Code
         run: |
           git clone --depth=1 --single-branch --branch $WRT_BRANCH $WRT_REPO ./wrt/
+
+      - name: ⬇️ Get uboot lists
+        run: |
+          cd ./wrt/uboot-mtk-20250711/configs/
+          find ./ -type f -name "mt*defconfig" -exec basename {} \; | sort > ./Uboots.txt
+          cat ./Uboots.txt
 
       - name: 🛠️ Compile Firmware
         run: |
