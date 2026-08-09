@@ -82,7 +82,31 @@ jobs:
             }' ./Uboots.txt | sort -u | xargs)
             eval "TYPE_$soc=\"$boards\""
           done
+          # 检查权限
+          mv -f Uboots.txt Uboots.sh
+          find ./ -maxdepth 3 -type f -iregex ".*\(txt\|sh\)$" -exec dos2unix {} \; -exec chmod +x {} \;
 
+          echo "WRT_TYPE_7981=$TYPE_7981" >> $GITHUB_ENV
+          echo "WRT_TYPE_7986=$TYPE_7986" >> $GITHUB_ENV
+
+      - name: Compile Uboot
+        run: |
+          cd ./wrt/
+
+          $GITHUB_WORKSPACE/Uboots.sh
+
+      - name: Machine Information
+        run: |
+          cd ./wrt/
+
+          echo "======================="
+          lscpu | grep -E "name|Core|Thread"
+          echo "======================="
+          df -h
+          echo "======================="
+          du -h --max-depth=1
+          echo "======================="
+          
       - name: 🛠️ Compile Firmware
         run: |
           cd ./wrt/
