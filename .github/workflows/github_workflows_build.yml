@@ -1,6 +1,7 @@
 
 name: ImmortalWrt DIY Builder
-
+permissions:
+  contents: write
 on:
   repository_dispatch:
     types: [ "Source Code Update" ]
