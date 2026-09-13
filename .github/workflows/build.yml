@@ -10,7 +10,7 @@ on:
         default: 'QLB-4Pro'
         type: choice
         options:
-          - cmcc_rax3000m-nand
+          - QLB-4Pro
           - cmcc_rax3000m-emmc
           - jdcloud_re-cp-03
           - xiaomi_mi-router-ax3000t
