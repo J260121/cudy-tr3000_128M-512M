@@ -7,7 +7,7 @@ on:
       device_profile:
         description: '选择目标设备配置'
         required: true
-        default: 'cmcc_rax3000m-nand'
+        default: 'QLB-4Pro'
         type: choice
         options:
           - cmcc_rax3000m-nand
