@@ -1,5 +1,5 @@
 
-name: ImmortalWrt DIY Builder
+name: ImmortalWrt Builder TSE
 
 on:
   repository_dispatch:
