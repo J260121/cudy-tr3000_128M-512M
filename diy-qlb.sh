@@ -39,11 +39,6 @@ sed -i -e '/^IMG_PREFIX:=/i BUILD_DATE := $(shell date +%Y%m%d)' \
 #sed -i 's|reg = <0x5c0000 0x4000000>;|reg = <0x5c0000 0x1FA40000>;|' target/linux/mediatek/dts/mt7981b-cudy-tr3000-512mb-v1.dts
 
 # 
-sed -i -e '/partition@5c0000 {/,/^[ \t]*};/ {
-    s|compatible = "linux,ubi";|reg = <0x5c0000 0x1FA40000>;\n\t\tcompatible = "linux,ubi";|
-}' target/linux/mediatek/dts/mt7981b-cudy-tr3000-512mb-v1.dtsi
-
-# 
 grep -q "define Device/QLB-4pro" target/linux/mediatek/image/filogic.mk || sed -i '/TARGET_DEVICES += cudy_wbr3000uax-v1-ubootmod/ a \
 define Device/QLB-4pro
   DEVICE_VENDOR := QLB
