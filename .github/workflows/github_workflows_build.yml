@@ -156,6 +156,7 @@ jobs:
         id: config-hash
         run: |
           FIRST_DEV_CONFIG="config/512m.config"
+          FIRST_DEV_DTS="dts/mt7981b-QLB-4Pro.dts"
           if [ "${DEVICE_INPUT}" != "all" ]; then
             case "$DEVICE_INPUT" in
               "512M") FIRST_DEV_CONFIG="config/512m.config" ;;
@@ -165,6 +166,7 @@ jobs:
             esac
           fi
           cp -f $GITHUB_WORKSPACE/$FIRST_DEV_CONFIG openwrt/.config
+          cp -f $GITHUB_WORKSPACE/$FIRST_DEV_DTS openwrt/target/linux/mediatek/dts/mt7981b-QLB-4Pro.dts
           cd openwrt && make defconfig
           CONFIG_HASH=$(md5sum .config | awk '{print $1}')
           echo "hash=$CONFIG_HASH" >> $GITHUB_OUTPUT
