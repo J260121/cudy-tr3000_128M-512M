@@ -15,7 +15,7 @@ on:
           - '512M'
           - '256M'
           - '128M'
-          - '128M-Ubootmod'
+          - 'mt7981-QLB-4Pro.config'
           - 'all' 
       repo:
         description: '指定源码仓库地址'
@@ -91,7 +91,7 @@ jobs:
             "512M") echo "CONFIG_FILE=config/512m.config" >> $GITHUB_ENV ;; 
             "256M") echo "CONFIG_FILE=config/256m.config" >> $GITHUB_ENV ;;
             "128M") echo "CONFIG_FILE=config/128m.config" >> $GITHUB_ENV ;;
-            "128M-Ubootmod") echo "CONFIG_FILE=config/128muboot.config" >> $GITHUB_ENV ;;
+            "128M-Ubootmod") echo "CONFIG_FILE=config/mt7981-QLB-4Pro.config" >> $GITHUB_ENV ;;
           esac
       - name: Load Feeds & Config
         run: |
