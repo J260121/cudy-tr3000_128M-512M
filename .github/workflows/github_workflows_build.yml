@@ -193,7 +193,7 @@ jobs:
         id: compile
         run: |
           if [ "${DEVICE_INPUT}" = "all" ]; then
-            DEVICES="512M 256M 128M 128M-Ubootmod"
+            DEVICES="512M 256M 128M QLB-4Pro"
           else
             DEVICES="${DEVICE_INPUT}"
           fi
@@ -205,7 +205,7 @@ jobs:
               "512M") CONFIG="config/512m.config" ;;
               "256M") CONFIG="config/256m.config" ;;
               "128M") CONFIG="config/128m.config" ;;
-              "128M-Ubootmod") CONFIG="config/128muboot.config" ;;
+              "QLB-4Pro") CONFIG="config/mt7981-QLB-4Pro.config" ;; 
             esac
             cp -f $GITHUB_WORKSPACE/$CONFIG .config
             make defconfig
