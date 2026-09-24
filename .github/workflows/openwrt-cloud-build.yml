@@ -605,7 +605,7 @@ jobs:
 
           cd "$OPENWRT_DIR"
           
-          cp -f $GITHUB_WORKSPACE/dts/. openwrt/target/linux/mediatek/dts/
+          cp -f $GITHUB_WORKSPACE/dts/* openwrt/target/linux/mediatek/dts/
 
           cat openwrt/target/linux/mediatek/dts/mt7981b-QLB*.dts
           
