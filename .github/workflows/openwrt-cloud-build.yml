@@ -1,0 +1,231 @@
+name: Cudy TR3000 高效云编译
+# 高效稳定的OpenWrt云编译工作流，支持多内存规格/多机型配置
+on:
+  workflow_dispatch:
+    inputs:
+      DEVICE_INPUT:
+        description: '选择编译设备型号'
+        required: true
+        default: '128M'
+        type: choice
+        options:
+          - 128M
+          - 256M
+          - 512M
+          - QLB-4Pro
+          - all
+      REPO_URL:
+        description: 'OpenWrt源码仓库地址'
+        required: false
+        default: 'https://github.com/immortalwrt/immortalwrt.git'
+        type: string
+      REPO_BRANCH:
+        description: '源码分支'
+        required: false
+        default: 'openwrt-23.05'
+        type: string
+
+env:
+  # 全局路径统一配置，避免硬编码错误
+  WORK_DIR: ${{ github.workspace }}
+  OPENWRT_PATH: /workdir/openwrt
+  FEEDS_CONF: feeds.conf.default
+  CONFIG_FILE: ''
+  CUSTOM_DTS: ''
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: 1. 检查仓库空间
+        id: check
+        run: |
+          echo "🔍 检查系统空间..."
+          df -h
+          sudo swapoff -a || true
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          echo "✅ 空间清理完成"
+          df -h
+
+      - name: 2. 拉取项目源码
+        uses: actions/checkout@v4
+
+      - name: 3. 依赖安装与目录初始化
+        run: |
+          echo "📦 安装编译依赖..."
+          sudo apt update -y
+          sudo apt full-upgrade -y
+          sudo apt install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
+            bzip2 ccache clang cmake cpio curl device-tree-compiler ecj fastjar flex gawk gettext gcc-multilib \
+            g++-multilib git gnutls-dev gperf haveged help2man intltool jq lib32gcc-s1 libc6-dev-i386 libelf-dev \
+            libfuse-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses-dev libpython3-dev \
+            libreadline-dev libssl-dev libtool llvm lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch \
+            pkgconf python3 python3-pyelftools python3-setuptools qemu-utils rsync scons squashfs-tools subversion \
+            swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev zstd
+          echo "✅ 依赖安装完成"
+          
+          # 创建工作目录，创建软链接统一路径
+          sudo mkdir -p /workdir
+          sudo chown $USER:$USER /workdir
+          if [ ! -d "$OPENWRT_PATH" ]; then
+            ln -sf "$WORK_DIR" "$OPENWRT_PATH"
+          fi
+
+      - name: 4. 拉取OpenWrt源码
+        uses: actions/checkout@v4
+        with:
+          repository: immortalwrt/immortalwrt
+          ref: openwrt-23.05
+          path: openwrt
+          fetch-depth: 0
+
+      - name: 5. 加载设备配置
+        id: config
+        run: |
+          DEVICE_INPUT="${{ inputs.DEVICE_INPUT }}"
+          echo "🔧 当前编译设备: $DEVICE_INPUT"
+          
+          if [ "$DEVICE_INPUT" != "all" ]; then
+            case "$DEVICE_INPUT" in
+              "128M")
+                FIRST_DEV_CONFIG="config/128m.config"
+                ;;
+              "256M")
+                FIRST_DEV_CONFIG="config/256m.config"
+                ;;
+              "512M")
+                FIRST_DEV_CONFIG="config/512m.config"
+                ;;
+              "QLB-4Pro")
+                FIRST_DEV_CONFIG="config/mt7981-QLB-4Pro.config"
+                CUSTOM_DTS="config/mt7981b-QLB-4Pro.dts"
+                ;;
+              *)
+                echo "::error::不支持的设备型号: $DEVICE_INPUT"
+                exit 1
+                ;;
+            esac
+            
+            # 前置校验配置文件是否存在
+            if [ ! -f "$WORK_DIR/$FIRST_DEV_CONFIG" ]; then
+              echo "::error::配置文件不存在: $WORK_DIR/$FIRST_DEV_CONFIG"
+              echo "📋 当前config目录下文件列表:"
+              ls -la "$WORK_DIR/config/"
+              exit 1
+            fi
+            
+            # 校验QLB-4Pro的DTS文件
+            if [ -n "$CUSTOM_DTS" ] && [ ! -f "$WORK_DIR/$CUSTOM_DTS" ]; then
+              echo "::error::DTS设备树文件不存在: $WORK_DIR/$CUSTOM_DTS"
+              find "$WORK_DIR" -name "*QLB-4Pro*.dts"
+              exit 1
+            fi
+            
+            echo "CONFIG_FILE=$FIRST_DEV_CONFIG" >> $GITHUB_ENV
+            echo "CUSTOM_DTS=$CUSTOM_DTS" >> $GITHUB_ENV
+            echo "✅ 配置加载成功: $FIRST_DEV_CONFIG"
+          else
+            echo "✅ 选择全量编译所有设备型号"
+          fi
+
+      - name: 6. 加载自定义feeds
+        run: |
+          cd "$OPENWRT_PATH"
+          echo "🔄 更新feeds配置..."
+          if [ -f "$WORK_DIR/feeds.conf.default" ]; then
+            cp -f "$WORK_DIR/feeds.conf.default" ./
+          fi
+          # 执行用户自定义脚本
+          if [ -f "$WORK_DIR/diy-part1.sh" ]; then
+            chmod +x "$WORK_DIR/diy-part1.sh"
+            bash "$WORK_DIR/diy-part1.sh"
+          fi
+
+      - name: 7. 更新并安装feeds
+        run: |
+          cd "$OPENWRT_PATH"
+          echo "📥 更新feeds..."
+          ./scripts/feeds update -a
+          echo "📦 安装feeds..."
+          ./scripts/feeds install -a
+          # 执行用户自定义脚本
+          if [ -f "$WORK_DIR/diy-part2.sh" ]; then
+            chmod +x "$WORK_DIR/diy-part2.sh"
+            bash "$WORK_DIR/diy-part2.sh"
+          fi
+
+      - name: 8. 复制自定义文件与配置
+        run: |
+          cd "$OPENWRT_PATH"
+          # 复制DTS文件到正确路径（修复之前的路径错误）
+          if [ -n "${{ env.CUSTOM_DTS }}" ]; then
+            DTS_TARGET_DIR="target/linux/mediatek/dts/"
+            mkdir -p "$DTS_TARGET_DIR"
+            echo "📄 复制自定义DTS文件到 $DTS_TARGET_DIR..."
+            cp -f "$WORK_DIR/${{ env.CUSTOM_DTS }}" "$DTS_TARGET_DIR/"
+            echo "✅ DTS文件复制完成"
+            ls -la "$DTS_TARGET_DIR/mt7981b-QLB-4Pro.dts"
+          fi
+          
+          # 加载编译配置
+          if [ -n "${{ env.CONFIG_FILE }}" ]; then
+            echo "⚙️ 加载编译配置文件..."
+            cp -f "$WORK_DIR/${{ env.CONFIG_FILE }}" .config
+            make defconfig
+          else
+            # 全量编译场景
+            echo "⚙️ 加载所有设备配置..."
+          fi
+          echo "✅ 配置准备完成"
+
+      - name: 9. 下载编译依赖包
+        run: |
+          cd "$OPENWRT_PATH"
+          echo "📥 下载编译所需源码包..."
+          make download -j$(nproc) || make download -j1 V=s
+          find dl -size -1024c -exec ls -l {} \;
+          find dl -size -1024c -exec rm -f {} \;
+          echo "✅ 依赖包下载完成"
+
+      - name: 10. 开始编译（开启多线程加速）
+        id: compile
+        run: |
+          cd "$OPENWRT_PATH"
+          echo "🚀 开始编译，使用 $(nproc) 线程并行编译..."
+          echo "cores=$(nproc)" >> $GITHUB_OUTPUT
+          make -j$(nproc) V=s || {
+            echo "❌ 多线程编译失败，回退单线程重试..."
+            make -j1 V=s
+          }
+          echo "✅ 固件编译完成"
+
+      - name: 11. 整理编译产物
+        id: artifact
+        run: |
+          cd "$OPENWRT_PATH/bin/targets"
+          echo "📦 整理编译产物..."
+          mkdir -p "$WORK_DIR/firmware"
+          # 查找所有固件文件
+          find . -name "*.bin" -o -name "*.img" -o -name "*.itb" -o -name "sha256sums" | while read file; do
+            cp -f "$file" "$WORK_DIR/firmware/"
+          done
+          ls -la "$WORK_DIR/firmware/"
+          echo "✅ 产物整理完成，共 $(ls -1 "$WORK_DIR/firmware/" | wc -l) 个文件"
+
+      - name: 12. 上传编译产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenWrt_Cudy_TR3000_${{ inputs.DEVICE_INPUT }}
+          path: ${{ github.workspace }}/firmware/
+          retention-days: 30
+          compression-level: 6
+
+      - name: 13. 生成固件信息
+        run: |
+          echo "🎉 编译成功！"
+          echo "📋 设备型号: ${{ inputs.DEVICE_INPUT }}"
+          echo "📋 源码分支: ${{ inputs.REPO_BRANCH }}"
+          echo "📋 编译时间: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "📋 编译线程: ${{ steps.compile.outputs.cores }}"
