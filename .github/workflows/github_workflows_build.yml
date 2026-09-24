@@ -160,7 +160,7 @@ jobs:
         id: config-hash
         run: |
           FIRST_DEV_CONFIG="config/512m.config"
-          FIRST_DEV_DTS="config/mt7981b-QLB-4Pro.dts"
+          FIRST_DEV_DTS="dts/mt7981b-QLB-4Pro.dts"
           if [ "${DEVICE_INPUT}" != "all" ]; then
             case "$DEVICE_INPUT" in
               "512M") FIRST_DEV_CONFIG="config/512m.config" ;;
