@@ -165,7 +165,7 @@ jobs:
               "512M") FIRST_DEV_CONFIG="config/512m.config" ;;
               "256M") FIRST_DEV_CONFIG="config/256m.config" ;;
               "128M") FIRST_DEV_CONFIG="config/128m.config" ;;
-              "QLB-4Pro") FIRST_DEV_CONFIG="config/mt7981-QLB-4Pro.config" ;;
+              "QLB-4Pro") FIRST_DEV_CONFIG="config/xmt7981-QLB-4Pro.config" ;;
               "QLB-4Pro") FIRST_DEV_CONFIG="config/mt7981b-QLB-4Pro.dts" ;;
             esac
           fi
