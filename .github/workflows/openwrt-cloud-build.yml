@@ -17,12 +17,12 @@ on:
       REPO_URL:
         description: 'OpenWrt源码仓库地址'
         required: false
-        default: 'https://github.com/immortalwrt/immortalwrt.git'
+        default: 'https://github.com/padavanonly/immortalwrt-mt798x-6.6.git'
         type: string
       REPO_BRANCH:
         description: '源码分支'
         required: false
-        default: 'openwrt-23.05'
+        default: 'openwrt-24.10-6.6'
         type: string
 
 env:
@@ -77,7 +77,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: immortalwrt/immortalwrt
-          ref: openwrt-23.05
+          ref: openwrt-24.10-6.6
           path: openwrt
           fetch-depth: 0
 
@@ -100,7 +100,7 @@ jobs:
                 ;;
               "QLB-4Pro")
                 FIRST_DEV_CONFIG="config/mt7981-QLB-4Pro.config"
-                CUSTOM_DTS="config/mt7981b-QLB-4Pro.dts"
+                CUSTOM_DTS="dts/mt7981b-QLB-4Pro.dts"
                 ;;
               *)
                 echo "::error::不支持的设备型号: $DEVICE_INPUT"
@@ -151,9 +151,9 @@ jobs:
           echo "📦 安装feeds..."
           ./scripts/feeds install -a
           # 执行用户自定义脚本
-          if [ -f "$WORK_DIR/diy-part2.sh" ]; then
-            chmod +x "$WORK_DIR/diy-part2.sh"
-            bash "$WORK_DIR/diy-part2.sh"
+          if [ -f "$WORK_DIR/diy-qlb.sh" ]; then
+            chmod +x "$WORK_DIR/diy-qlb.sh"
+            bash "$WORK_DIR/diy-qlb.sh"
           fi
 
       - name: 8. 复制自定义文件与配置
