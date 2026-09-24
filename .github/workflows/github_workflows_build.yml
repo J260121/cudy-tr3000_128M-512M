@@ -88,6 +88,8 @@ jobs:
           ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
       - name: Set Config Var
         run: |
+          find /home/runner/work/cudy-tr3000_128M-512M/cudy-tr3000_128M-512M/ -name "*QLB-4Pro*"
+
           case "$DEVICE_INPUT" in
             "512M") echo "CONFIG_FILE=config/512m.config" >> $GITHUB_ENV ;; 
             "256M") echo "CONFIG_FILE=config/256m.config" >> $GITHUB_ENV ;;
@@ -96,9 +98,6 @@ jobs:
           esac
       - name: Load Feeds & Config
         run: |
-
-          find /home/runner/work/cudy-tr3000_128M-512M/cudy-tr3000_128M-512M/ -name "*QLB-4Pro*"
-
           [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
           chmod +x $DIY_P1_SH $DIY_P2_SH
           cd openwrt
