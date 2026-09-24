@@ -78,7 +78,6 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y libncurses-dev build-essential git wget python3 bzip2
-          sudo apt install tree -y
           sudo mkdir -p /workdir
           sudo chown $USER:$GROUPS /workdir
           
@@ -97,7 +96,7 @@ jobs:
           esac
       - name: Load Feeds & Config
         run: |
-          tree $GITHUB_WORKSPACE
+          ls $GITHUB_WORKSPACE
           [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
           chmod +x $DIY_P1_SH $DIY_P2_SH
           cd openwrt
