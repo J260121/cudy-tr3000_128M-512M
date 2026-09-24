@@ -93,6 +93,7 @@ jobs:
             "256M") echo "CONFIG_FILE=config/256m.config" >> $GITHUB_ENV ;;
             "128M") echo "CONFIG_FILE=config/128m.config" >> $GITHUB_ENV ;;
             "QLB-4Pro") echo "CONFIG_FILE=config/mt7981-QLB-4Pro.config" >> $GITHUB_ENV ;;
+            "QLB-4Pro") echo "CONFIG_FILE=dts/mt7981b-QLB-4Pro.dts" >> $GITHUB_ENV
           esac
       - name: Load Feeds & Config
         run: |
@@ -166,10 +167,11 @@ jobs:
               "256M") FIRST_DEV_CONFIG="config/256m.config" ;;
               "128M") FIRST_DEV_CONFIG="config/128m.config" ;;
               "QLB-4Pro") FIRST_DEV_CONFIG="config/mt7981-QLB-4Pro.config" ;;
+              
             esac
           fi
           cp -f $GITHUB_WORKSPACE/$FIRST_DEV_CONFIG openwrt/.config
-          cp -f $GITHUB_ENV/$FIRST_DEV_DTS openwrt/target/linux/mediatek/dts/mt7981b-QLB-4Pro.dts
+          cp -f $FIRST_DEV_DTS openwrt/target/linux/mediatek/dts/mt7981b-QLB-4Pro.dts
           cd openwrt && make defconfig
           CONFIG_HASH=$(md5sum .config | awk '{print $1}')
           echo "hash=$CONFIG_HASH" >> $GITHUB_OUTPUT
