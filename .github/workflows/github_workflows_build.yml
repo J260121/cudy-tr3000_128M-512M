@@ -170,7 +170,7 @@ jobs:
             esac
           fi
           cp -f $GITHUB_WORKSPACE/$FIRST_DEV_CONFIG openwrt/.config
-          cp -f $GITHUB_WORKSPACE/$FIRST_DEV_DTS openwrt/target/linux/mediatek/dts/mt7981b-QLB-4Pro.dts
+          cp -f /workdir/openwrt/config/mt7981b-QLB-4Pro.dts openwrt/target/linux/mediatek/dts/mt7981b-QLB-4Pro.dts
           cd openwrt && make defconfig
           CONFIG_HASH=$(md5sum .config | awk '{print $1}')
           echo "hash=$CONFIG_HASH" >> $GITHUB_OUTPUT
