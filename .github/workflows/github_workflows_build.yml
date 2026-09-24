@@ -96,7 +96,9 @@ jobs:
           esac
       - name: Load Feeds & Config
         run: |
-          
+
+          find /home/runner/work/cudy-tr3000_128M-512M/cudy-tr3000_128M-512M/ -name "*QLB-4Pro*"
+
           [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
           chmod +x $DIY_P1_SH $DIY_P2_SH
           cd openwrt
