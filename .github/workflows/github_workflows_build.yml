@@ -81,6 +81,7 @@ jobs:
           sudo apt install tree -y
           sudo mkdir -p /workdir
           sudo chown $USER:$GROUPS /workdir
+          
       - name: Clone Source
         working-directory: /workdir
         run: |
@@ -96,6 +97,7 @@ jobs:
           esac
       - name: Load Feeds & Config
         run: |
+          tree $GITHUB_WORKSPACE
           [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
           chmod +x $DIY_P1_SH $DIY_P2_SH
           cd openwrt
@@ -103,7 +105,7 @@ jobs:
           ./scripts/feeds update -a && ./scripts/feeds install -a
           [ -e $GITHUB_WORKSPACE/$CONFIG_FILE ] && cp -f $GITHUB_WORKSPACE/$CONFIG_FILE .config
           $GITHUB_WORKSPACE/$DIY_P2_SH
-          tree $GITHUB_WORKSPACE
+         
       - name: SSH Session
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 15
