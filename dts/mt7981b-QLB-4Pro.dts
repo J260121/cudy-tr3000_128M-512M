@@ -21,7 +21,6 @@
 	};
 
 	chosen {
-
 		stdout-path = "serial0:115200n8";
 	};
 
@@ -69,10 +68,6 @@
 		compatible = "mediatek,eth-mac";
 		reg = <0>;
 		phy-mode = "2500base-x";
-
-		nvmem-cells = <&macaddr_factory_a002a 0>;
-		nvmem-cell-names = "mac-address";
-
 		fixed-link {
 			speed = <2500>;
 			full-duplex;
@@ -175,9 +170,6 @@
 		port@0 {
 			reg = <0>;
 			label = "wan";
-
-			nvmem-cells = <&macaddr_factory_a0024 0>;
-			nvmem-cell-names = "mac-address";
 		};
 
 		port@1 {
