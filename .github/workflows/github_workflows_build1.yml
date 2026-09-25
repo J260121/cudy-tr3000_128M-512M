@@ -1,5 +1,5 @@
 
-name: 1 ImmortalWrt MT798x Builder
+name: 1 ImmortalWrt MT798x Builder delete
 
 on:
   repository_dispatch:
