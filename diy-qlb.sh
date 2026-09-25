@@ -39,12 +39,12 @@ sed -i -e '/^IMG_PREFIX:=/i BUILD_DATE := $(shell date +%Y%m%d)' \
 #sed -i 's|reg = <0x5c0000 0x4000000>;|reg = <0x5c0000 0x1FA40000>;|' target/linux/mediatek/dts/mt7981b-cudy-tr3000-512mb-v1.dts
 
 # 
-grep -q "define Device/QLB-4pro" target/linux/mediatek/image/filogic.mk || sed -i '/TARGET_DEVICES += cudy_wbr3000uax-v1-ubootmod/ a \
-define Device/QLB-4pro\
+grep -q "define Device/QLB-4Pro" target/linux/mediatek/image/filogic.mk || sed -i '/TARGET_DEVICES += cudy_wbr3000uax-v1-ubootmod/ a \
+define Device/QLB-4Pro\
   DEVICE_VENDOR := QLB\
   DEVICE_MODEL := 4Pro\
   DEVICE_VARIANT := v1\
-  DEVICE_DTS := mt7981b-QLB-4pro\
+  DEVICE_DTS := mt7981b-QLB-4Pro\
   DEVICE_DTS_DIR := ../dts\
   SUPPORTED_DEVICES += R47-512MB\
   BLOCKSIZE := 128k\
@@ -54,7 +54,7 @@ define Device/QLB-4pro\
   IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata\
   DEVICE_PACKAGES := kmod-usb3 f2fsck mkf2fs\
 endef\
-TARGET_DEVICES += QLB-4pro\
+TARGET_DEVICES += QLB-4Pro\
 ' target/linux/mediatek/image/filogic.mk
 
 # 网络配置支持匹配新设备名
