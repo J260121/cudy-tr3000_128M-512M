@@ -8,20 +8,18 @@
 #include "mt7981.dtsi"
 
 / {
-	model = "QLB-4pro";
+	model = "QLB-4Pro";
 	compatible = "QLB,4Pro", "mediatek,mt7981";
 
 	aliases {
 		serial0 = &uart0;
-		label-mac-device = &gmac0;
 		led-boot = &led_status_red;
 		led-failsafe = &led_status_red;
-		led-running = &led_status_blue;
-		led-upgrade = &led_status_blue;
+		led-running = &led_status_green;
+		led-upgrade = &led_status_green;
 	};
 
 	chosen {
-
 		stdout-path = "serial0:115200n8";
 	};
 
@@ -32,32 +30,32 @@
 	gpio-keys {
 		compatible = "gpio-keys";
 
-		button-reset {
+		reset {
 			label = "reset";
 			linux,code = <KEY_RESTART>;
 			gpios = <&pio 1 GPIO_ACTIVE_LOW>;
 		};
 
-		button-wps {
+		wps {
 			label = "wps";
 			linux,code = <KEY_WPS_BUTTON>;
-			gpios = <&pio 0 GPIO_ACTIVE_HIGH>;
+			gpios = <&pio 0 GPIO_ACTIVE_LOW>;
 		};
 	};
 
-	gpio-leds {
+	leds {
 		compatible = "gpio-leds";
 
 		led_status_red: red {
 			function = LED_FUNCTION_STATUS;
 			color = <LED_COLOR_ID_RED>;
-			gpios = <&pio 8 GPIO_ACTIVE_HIGH>;
+			gpios = <&pio 3 GPIO_ACTIVE_LOW>;
 		};
 
-		led_status_blue: blue {
+		led_status_green: green {
 			function = LED_FUNCTION_STATUS;
-			color = <LED_COLOR_ID_BLUE>;
-			gpios = <&pio 13 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_GREEN>;
+			gpios = <&pio 7 GPIO_ACTIVE_LOW>;
 		};
 	};
 };
@@ -69,9 +67,6 @@
 		compatible = "mediatek,eth-mac";
 		reg = <0>;
 		phy-mode = "2500base-x";
-
-		nvmem-cells = <&macaddr_factory_a002a 0>;
-		nvmem-cell-names = "mac-address";
 
 		fixed-link {
 			speed = <2500>;
@@ -98,17 +93,17 @@
 	pinctrl-0 = <&spi0_flash_pins>;
 	status = "okay";
 
-	spi_nand: flash@0 {
+	spi_nand@0 {
+		compatible = "spi-nand";
 		#address-cells = <1>;
 		#size-cells = <1>;
-		compatible = "spi-nand";
 		reg = <0>;
-		spi-max-frequency = <52000000>;
 
+		spi-max-frequency = <52000000>;
 		spi-tx-bus-width = <4>;
 		spi-rx-bus-width = <4>;
-		
-                mediatek,nmbm;
+
+		mediatek,nmbm;
                 mediatek,bmt-max-ratio = <1>;
                 mediatek,bmt-max-reserved-blocks = <64>;
 
@@ -119,49 +114,30 @@
 
 			partition@0 {
 				label = "bl2";
-				reg = <0x00000 0x100000>;
+				reg = <0x0000000 0x0100000>;
 				read-only;
 			};
 
 			partition@100000 {
 				label = "u-boot-env";
-				reg = <0x100000 0x80000>;
+				reg = <0x0100000 0x0080000>;
 			};
 
 			factory: partition@180000 {
 				label = "Factory";
-				reg = <0x180000 0x200000>;
+				reg = <0x0180000 0x0200000>;
 				read-only;
-
-				compatible = "nvmem-cells";
-				nvmem-layout {
-					compatible = "fixed-layout";
-					#address-cells = <1>;
-					#size-cells = <1>;
-
-					macaddr_factory_a002a: macaddr@a002a {
-						compatible = "mac-base";
-						reg = <0xa002a 0x6>;
-						#nvmem-cell-cells = <1>;
-					};
-
-					macaddr_factory_a0024: macaddr@a0024 {
-						compatible = "mac-base";
-						reg = <0xa0024 0x6>;
-						#nvmem-cell-cells = <1>;
-					};
-				};
 			};
 
 			partition@380000 {
 				label = "fip";
-				reg = <0x380000 0x200000>;
+				reg = <0x0380000 0x0200000>;
 				read-only;
 			};
 
-			ubi: partition@580000 {
+			partition@580000 {
 				label = "ubi";
-				reg = <0x0580000 0x6EC0000>;
+				reg = <0x0580000 0x6ec0000>;
 			};
 		};
 	};
@@ -175,9 +151,6 @@
 		port@0 {
 			reg = <0>;
 			label = "wan";
-
-			nvmem-cells = <&macaddr_factory_a0024 0>;
-			nvmem-cell-names = "mac-address";
 		};
 
 		port@1 {
