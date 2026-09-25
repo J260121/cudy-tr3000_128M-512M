@@ -1,5 +1,5 @@
 
-name: ImmortalWrt Builder TSE
+name: ImmortalWrt Builder TSE delete
 
 on:
   repository_dispatch:
