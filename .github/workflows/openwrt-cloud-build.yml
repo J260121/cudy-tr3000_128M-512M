@@ -262,12 +262,8 @@ jobs:
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
         with:
-          limit-access-to-actor: true
-          detached: true  # 关键修改：设置为 true
-      
-      - name: Keep alive (可选)
-        run: sleep 3600   # 防止工作流立即结束，给你时间连接
-
+          limit-access-to-actor: true # 仅允许触发者连接，更安全
+          detached: true              # 关键：设置为 true，步骤会立即完成并输出地址，不会阻塞日志
 
 
 
