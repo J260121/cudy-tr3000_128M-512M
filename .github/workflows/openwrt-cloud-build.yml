@@ -259,12 +259,15 @@ jobs:
       # --------------------------------------------------------
       # SSH
       # --------------------------------------------------------
-      - name: SSH Session (Tmate)
+      - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 15
         with:
           limit-access-to-actor: true
-          # 注意：upterm-version 参数已移除，因为它不适用于 tmate
+          detached: true  # 关键修改：设置为 true
+      
+      - name: Keep alive (可选)
+        run: sleep 3600   # 防止工作流立即结束，给你时间连接
+
 
 
 
