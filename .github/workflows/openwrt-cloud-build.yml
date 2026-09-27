@@ -259,13 +259,14 @@ jobs:
       # --------------------------------------------------------
       # SSH
       # --------------------------------------------------------
-      - name: SSH Session
-        uses: mxschmitt/action-tmate@v3 
-        #owenthereal/action-upterm@v1.15.0
+      - name: SSH Session (Tmate)
+        uses: mxschmitt/action-tmate@v3
         timeout-minutes: 15
         with:
           limit-access-to-actor: true
-          upterm-version: v0.29.0
+          # 注意：upterm-version 参数已移除，因为它不适用于 tmate
+
+
 
       # --------------------------------------------------------
       # 保存 Config
