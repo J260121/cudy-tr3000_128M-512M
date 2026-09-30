@@ -37,7 +37,7 @@ cp target/linux/mediatek/dts/mt7981b-cudy-tr3000-v1.dts target/linux/mediatek/dt
 cp target/linux/mediatek/dts/mt7981b-cudy-tr3000-v1.dtsi target/linux/mediatek/dts/mt7981b-cudy-tr3000-512mb-v1.dtsi
 
 sed -i 's|reg = <0x5c0000 0x4000000>;|reg = <0x5c0000 0x1FA40000>;|' target/linux/mediatek/dts/mt7981b-cudy-tr3000-512mb-v1.dts
-
+sed -i 's|model = "Cudy TR3000 v1";|model = "Cudy TR3000 v1 512MB";|' target/linux/mediatek/dts/mt7981b-cudy-tr3000-512mb-v1.dts
 # 
 sed -i -e '/partition@5c0000 {/,/^[ \t]*};/ {
     s|compatible = "linux,ubi";|reg = <0x5c0000 0x1FA40000>;\n\t\tcompatible = "linux,ubi";|
