@@ -36,12 +36,43 @@ sed -i '/modem-power/,/};/{s/gpio-export,output = <1>;/gpio-export,output = <0>;
 cp target/linux/mediatek/dts/mt7981b-cudy-tr3000-v1.dts target/linux/mediatek/dts/mt7981b-cudy-tr3000-512mb-v1.dts
 cp target/linux/mediatek/dts/mt7981b-cudy-tr3000-v1.dtsi target/linux/mediatek/dts/mt7981b-cudy-tr3000-512mb-v1.dtsi
 
+cp target/linux/mediatek/dts/mt7981b-cudy-tr3000-v1.dts target/linux/mediatek/dts/mt7981b-cudy-tr3000-256mb-v1.dts
+cp target/linux/mediatek/dts/mt7981b-cudy-tr3000-v1.dtsi target/linux/mediatek/dts/mt7981b-cudy-tr3000-256mb-v1.dtsi
+
 sed -i 's|reg = <0x5c0000 0x4000000>;|reg = <0x5c0000 0x1FA40000>;|' target/linux/mediatek/dts/mt7981b-cudy-tr3000-512mb-v1.dts
 sed -i 's|model = "Cudy TR3000 v1";|model = "Cudy TR3000 v1 512MB";|' target/linux/mediatek/dts/mt7981b-cudy-tr3000-512mb-v1.dts
+
+sed -i 's|reg = <0x5c0000 0x4000000>;|reg = <0x5c0000 0xE600000>;|' target/linux/mediatek/dts/mt7981b-cudy-tr3000-256mb-v1.dts
+sed -i 's|model = "Cudy TR3000 v1";|model = "Cudy TR3000 v1 256MB";|' target/linux/mediatek/dts/mt7981b-cudy-tr3000-256mb-v1.dts
 # 
 sed -i -e '/partition@5c0000 {/,/^[ \t]*};/ {
     s|compatible = "linux,ubi";|reg = <0x5c0000 0x1FA40000>;\n\t\tcompatible = "linux,ubi";|
 }' target/linux/mediatek/dts/mt7981b-cudy-tr3000-512mb-v1.dtsi
+
+sed -i -e '/partition@5c0000 {/,/^[ \t]*};/ {
+    s|compatible = "linux,ubi";|reg = <0x5c0000 0xE600000>;\n\t\tcompatible = "linux,ubi";|
+}' target/linux/mediatek/dts/mt7981b-cudy-tr3000-256mb-v1.dtsi
+
+# cudy_tr3000-v1-256mb
+grep -q "define Device/cudy_tr3000-256mb-v1" target/linux/mediatek/image/filogic.mk || sed -i '/TARGET_DEVICES += cudy_wbr3000uax-v1-ubootmod/ a \
+define Device/cudy_tr3000-256mb-v1\
+  DEVICE_VENDOR := Cudy\
+  DEVICE_MODEL := TR3000\
+  DEVICE_VARIANT := v1 (256MB NAND)\
+  DEVICE_DTS := mt7981b-cudy-tr3000-256mb-v1\
+  DEVICE_DTS_DIR := ../dts\
+  SUPPORTED_DEVICES += R47-256MB\
+  UBINIZE_OPTS := -E 5\
+  BLOCKSIZE := 128k\
+  PAGESIZE := 2048\
+  IMAGE_SIZE := 235520k\
+  KERNEL_IN_UBI := 1\
+  IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata\
+  DEVICE_PACKAGES := kmod-usb3 kmod-mt7915e kmod-mt7981-firmware mt7981-wo-firmware automount\
+endef\
+TARGET_DEVICES += cudy_tr3000-256mb-v1\
+' target/linux/mediatek/image/filogic.mk
+
 
 # 
 grep -q "define Device/cudy_tr3000-512mb-v1" target/linux/mediatek/image/filogic.mk || sed -i '/TARGET_DEVICES += cudy_wbr3000uax-v1-ubootmod/ a \
@@ -64,4 +95,4 @@ TARGET_DEVICES += cudy_tr3000-512mb-v1\
 ' target/linux/mediatek/image/filogic.mk
 
 # 网络配置支持匹配新设备名
-#sed -i '/cudy,tr3000-v1|\\/a cudy,tr3000-512mb-v1|\\' target/linux/mediatek/filogic/base-files/etc/board.d/02_network
+# sed -i '/cudy,tr3000-v1|\\/a cudy,tr3000-512mb-v1|\\' target/linux/mediatek/filogic/base-files/etc/board.d/02_network
