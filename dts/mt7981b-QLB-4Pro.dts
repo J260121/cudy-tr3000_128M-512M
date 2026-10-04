@@ -145,23 +145,23 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 
-		port@1 {
+		port@0 {
 			reg = <1>;
 			label = "lan3";
 		};
 
-		port@2 {
+		port@1 {
 			reg = <2>;
 			label = "lan2";
 		};
 
-		port@3 {
+		port@2 {
 			reg = <3>;
 			label = "lan1";
 		};
 
-		port@0 {
-			reg = <0>;
+		port@6 {
+			reg = <6>;
 			ethernet = <&gmac0>;
 			phy-mode = "2500base-x";
 
