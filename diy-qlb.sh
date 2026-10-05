@@ -40,7 +40,8 @@ sed -i -e '/^IMG_PREFIX:=/i BUILD_DATE := $(shell date +%Y%m%d)' \
 
 
 # 修改板载网口
-sed -i '//bt,r320/a\	QLB,4Pro|\\' target/linux/mediatek/filogic/base-files/etc/board.d/02_network
+#sed -i '//bt,r320/a\	QLB,4Pro|\\' target/linux/mediatek/filogic/base-files/etc/board.d/02_network
+sed -i '/bt,r320|\\/a\\'$'\t''QLB,4Pro|\\' target/linux/mediatek/filogic/base-files/etc/board.d/02_network
 	
 grep -q "define Device/QLB-4Pro" target/linux/mediatek/image/filogic.mk || sed -i '/TARGET_DEVICES += cudy_wbr3000uax-v1-ubootmod/ a \
 define Device/QLB-4Pro\
