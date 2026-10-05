@@ -57,4 +57,4 @@ TARGET_DEVICES += QLB-4Pro\
 ' target/linux/mediatek/image/filogic.mk
 
 # 网络配置支持匹配新设备名
-sed -i '/qihoo,360t7|\\/a QLB,4Pro|\\' target/linux/mediatek/filogic/base-files/etc/board.d/02_network
+sed -i '/qihoo,360t7|\\/a	QLB,4Pro|\\' target/linux/mediatek/filogic/base-files/etc/board.d/02_network
