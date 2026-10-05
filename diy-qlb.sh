@@ -50,7 +50,7 @@ define Device/QLB-4Pro\
   DEVICE_DTS := mt7981b-QLB-4Pro\
   DEVICE_DTS_DIR := ../dts\
   SUPPORTED_DEVICES += R47\
-  BLOCKSIZE := 128k\
+  BLOCKSIZE := 512k\
   PAGESIZE := 2048\
   IMAGE_SIZE := 113408k\
   KERNEL_IN_UBI := 1\
