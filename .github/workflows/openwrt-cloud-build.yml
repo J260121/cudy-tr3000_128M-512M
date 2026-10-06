@@ -331,7 +331,7 @@ jobs:
 
               # QLB-4Pro device definition
               "$GITHUB_WORKSPACE/diy-qlb.sh"
-              ;;
+              
               # ikuai-q6000-nand device definition
               "$GITHUB_WORKSPACE/diy-ikuai-q6000-nand.sh"
               ;;
