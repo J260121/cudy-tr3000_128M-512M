@@ -267,14 +267,11 @@ jobs:
           chmod +x \
             "$GITHUB_WORKSPACE"/*.sh
 
-          if [ -d "$GITHUB_WORKSPACE/dts" ]; then
-            mkdir -p \
-              target/linux/mediatek/dts
 
             cp -f \
               "$GITHUB_WORKSPACE"/dts/* \
               target/linux/mediatek/dts/
-          fi
+          
 
 
       # ==========================================================
