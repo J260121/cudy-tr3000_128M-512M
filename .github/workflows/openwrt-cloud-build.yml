@@ -268,70 +268,70 @@ jobs:
 
           echo "Commit:"
           git rev-parse HEAD
-
-
       # ========================================================
-      # DIY Scripts
+      # Apply Device DIY
+      #
+      # 必须在 make defconfig 前执行。
       # ========================================================
 
-      - name: Prepare Files And Scripts
+      - name: Apply Device DIY
         shell: bash
         run: |
           set -e
+
           cd "$OPENWRT_DIR"
+
           cp -f $GITHUB_WORKSPACE/*.sh ./
           cp -f $GITHUB_WORKSPACE/dts/* ./target/linux/mediatek/dts/
-
-      # ========================================================
-      # Load Scripts
-      # ========================================================
-
-      - name: Load Scripts
-        shell: bash
-        run: |
-          set -e
-          cd "$OPENWRT_DIR"
-          chmod +x $GITHUB_WORKSPACE/*.sh
-
           case "$DEVICE_INPUT" in
+
             512M)
               echo "========================================"
               echo "Apply TR3000 512M"
               echo "========================================"
+
               "$GITHUB_WORKSPACE/diy-part2.sh"
               ;;
+
             256M)
               echo "========================================"
               echo "TR3000 256M"
               echo "========================================"
-              "$GITHUB_WORKSPACE/diy-part2.sh"
               ;;
+
             128M)
               echo "========================================"
               echo "TR3000 128M"
               echo "========================================"
-              "$GITHUB_WORKSPACE/diy-part2.sh"
               ;;
+
             QLB-4Pro)
               echo "========================================"
               echo "Apply QLB-4Pro"
               echo "========================================"
+
               "$GITHUB_WORKSPACE/diy-qlb.sh"
               ;;
+
             ikuai-q6000-nand)
               echo "========================================"
               echo "Apply ikuai-q6000-nand"
               echo "========================================"
+
               "$GITHUB_WORKSPACE/diy-ikuai-q6000-nand.sh"
               ;;
+			  
             all)
               echo "========================================"
               echo "Apply all device definitions"
               echo "========================================"
+
               # 512M device definition
               "$GITHUB_WORKSPACE/diy-part2.sh"
+
               # QLB-4Pro device definition
               "$GITHUB_WORKSPACE/diy-qlb.sh"
+              ;;
               # ikuai-q6000-nand device definition
               "$GITHUB_WORKSPACE/diy-ikuai-q6000-nand.sh"
               ;;
@@ -339,74 +339,8 @@ jobs:
               echo "Unknown device: $DEVICE_INPUT"
               exit 1
               ;;
+
           esac
-
-      # ========================================================
-      # Rebuilt Config
-      # ========================================================
-
-      - name: Feed And Rebuilt Config
-        id: config-hash
-        shell: bash
-        run: |
-          set -e
-          cd "$OPENWRT_DIR"
-
-          if [ "$DEVICE_INPUT" = "all" ]; then
-            DEVICES="512M 256M 128M QLB-4Pro ikuai-q6000-nand"
-          else
-            DEVICES="$DEVICE_INPUT"
-          fi
-
-          mkdir -p \
-            "$GITHUB_WORKSPACE/firmware_collection"
-
-          cd "$OPENWRT_DIR"
-
-
-          for DEV in $DEVICES; do
-
-            echo
-            echo "::group::🚀 Building $DEV"
-
-            case "$DEV" in
-
-              512M)
-                CONFIG="$GITHUB_WORKSPACE/config/512m.config"
-                ;;
-
-              256M)
-                CONFIG="$GITHUB_WORKSPACE/config/256m.config"
-                ;;
-
-              128M)
-                CONFIG="$GITHUB_WORKSPACE/config/128m.config"
-                ;;
-
-              QLB-4Pro)
-                CONFIG="$GITHUB_WORKSPACE/config/mt7981-QLB-4Pro.config"
-                ;;
-              ikuai-q6000-nand)
-                CONFIG="$GITHUB_WORKSPACE/config/mt7986-ikuai-q6000-nand.config"
-                ;;
-              *)
-                echo "Unknown device: $DEV"
-                exit 1
-                ;;
-
-            esac
-
-
-            echo "========================================"
-            echo "DEVICE: $DEV"
-            echo "CONFIG: $CONFIG"
-            echo "========================================"
-
-
-            # --------------------------------------------------
-            # 写入设备 Config
-            # --------------------------------------------------
-
 
           cp -f "$CONFIG" .config
           
@@ -417,19 +351,13 @@ jobs:
           "$GITHUB_WORKSPACE/diy-part3.sh"
           "$GITHUB_WORKSPACE/install_passwall2.sh"
           "$GITHUB_WORKSPACE/install_bandix_plus.sh"
+          
           make defconfig
 
           CONFIG_HASH=$(md5sum .config | awk '{print $1}')
 
           echo "hash=$CONFIG_HASH" >> "$GITHUB_OUTPUT"
-
-          echo "========================================"
-          echo "CONFIG HASH"
-          echo "========================================"
-
-          echo "$CONFIG_HASH"
-
-
+		  
       # ========================================================
       # Ccache Cache
       # ========================================================
@@ -443,7 +371,7 @@ jobs:
             ${{ runner.os }}-ccache-
             ${{ env.REPO_BRANCH }}-
             ${{ steps.config-hash.outputs.hash }}-
-            ${{ hashFiles('*.sh', 'config/*.config', 'dts/*') }}
+            ${{ hashFiles('diy-*.sh', 'config/*.config', 'dts/*') }}
 
           restore-keys: |
             ${{ runner.os }}-ccache-${{ env.REPO_BRANCH }}-
@@ -500,6 +428,18 @@ jobs:
 
       # ========================================================
       # Download
+      #
+      # 关键优化：
+      #
+      # 原模板：
+      #
+      # 512M -> download
+      # 256M -> download
+      # 128M -> download
+      # QLB  -> download
+      #
+      # 这里：
+      #
       # 全部设备只 download 一次。
       # ========================================================
 
@@ -526,6 +466,75 @@ jobs:
         shell: bash
         run: |
           set -e
+
+          if [ "$DEVICE_INPUT" = "all" ]; then
+            DEVICES="512M 256M 128M QLB-4Pro ikuai-q6000-nand"
+          else
+            DEVICES="$DEVICE_INPUT"
+          fi
+
+          mkdir -p \
+            "$GITHUB_WORKSPACE/firmware_collection"
+
+          cd "$OPENWRT_DIR"
+
+
+          for DEV in $DEVICES; do
+
+            echo
+            echo "::group::🚀 Building $DEV"
+
+            case "$DEV" in
+
+              512M)
+                CONFIG="$GITHUB_WORKSPACE/config/512m.config"
+                ;;
+
+              256M)
+                CONFIG="$GITHUB_WORKSPACE/config/256m.config"
+                ;;
+
+              128M)
+                CONFIG="$GITHUB_WORKSPACE/config/128m.config"
+                ;;
+
+              QLB-4Pro)
+                CONFIG="$GITHUB_WORKSPACE/config/mt7981-QLB-4Pro.config"
+                ;;
+                
+              ikuai-q6000-nand)
+                CONFIG="$GITHUB_WORKSPACE/config/mt7986-ikuai-q6000-nand.config"
+                ;;
+
+              *)
+                echo "Unknown device: $DEV"
+                exit 1
+                ;;
+
+            esac
+
+
+            echo "========================================"
+            echo "DEVICE: $DEV"
+            echo "CONFIG: $CONFIG"
+            echo "========================================"
+
+
+            # --------------------------------------------------
+            # 写入设备 Config
+            # --------------------------------------------------
+
+            cp -f \
+              "$CONFIG" \
+              .config
+
+
+            # --------------------------------------------------
+            # 根据当前 Config 生成最终配置
+            # --------------------------------------------------
+
+            make defconfig
+
 
             # --------------------------------------------------
             # 显示 Target
