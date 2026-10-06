@@ -2,7 +2,8 @@ name: ImmortalWrt Builder DIY
 
 on:
   repository_dispatch:
-    types: ["Source Code Update"]
+    types:
+      - "Source Code Update"
 
   workflow_dispatch:
     inputs:
@@ -37,12 +38,6 @@ on:
         type: string
         default: ""
 
-      #ssh:
-        #description: "开启 SSH 配置，仅单设备有效"
-        #required: false
-        #type: boolean
-        #default: false
-
       release:
         description: "发布到 GitHub Release"
         required: false
@@ -64,15 +59,7 @@ concurrency:
 env:
   TZ: Asia/Shanghai
 
-  # ----------------------------------------------------------
-  # 编译设备
-  # ----------------------------------------------------------
-
   DEVICE_INPUT: ${{ github.event.inputs.device || github.event.client_payload.device || 'all' }}
-
-  # ----------------------------------------------------------
-  # ImmortalWrt
-  # ----------------------------------------------------------
 
   REPO_URL: ${{ github.event.inputs.repo || github.event.client_payload.repo || 'https://github.com/padavanonly/immortalwrt-mt798x-6.6' }}
 
@@ -80,22 +67,10 @@ env:
 
   REPO_COMMIT: ${{ github.event.inputs.commit || github.event.client_payload.commit || '' }}
 
-  # ----------------------------------------------------------
-  # Ccache
-  # ----------------------------------------------------------
-
   CCACHE_DIR: /workdir/.ccache
   CCACHE_MAXSIZE: 6G
 
-  # ----------------------------------------------------------
-  # 编译目录
-  # ----------------------------------------------------------
-
   OPENWRT_DIR: /workdir/openwrt
-
-  # ----------------------------------------------------------
-  # Release
-  # ----------------------------------------------------------
 
   UPLOAD_RELEASE: ${{ github.event.inputs.release || github.event.client_payload.release || 'true' }}
 
@@ -103,30 +78,35 @@ env:
 
 
 jobs:
+
   build:
     name: "🔨 Build Firmware"
     runs-on: ubuntu-22.04
 
+    permissions:
+      contents: write
+      actions: write
+
     steps:
 
-      # ========================================================
+      # ==========================================================
       # Checkout
-      # ========================================================
+      # ==========================================================
 
       - name: Checkout
         uses: actions/checkout@v4
 
 
-      # ========================================================
-      # 编译环境
-      # ========================================================
+      # ==========================================================
+      # Build Environment
+      # ==========================================================
 
       - name: Init Environment
         shell: bash
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-          set -e
+          set -Eeuo pipefail
 
           sudo rm -rf \
             /etc/apt/sources.list.d/* \
@@ -227,15 +207,17 @@ jobs:
             /workdir
 
 
-      # ========================================================
-      # Clone ImmortalWrt
-      # ========================================================
+      # ==========================================================
+      # Clone Source
+      # ==========================================================
 
       - name: Clone Source
         working-directory: /workdir
         shell: bash
         run: |
-          set -e
+          set -Eeuo pipefail
+
+          rm -rf "$OPENWRT_DIR"
 
           git clone \
             "$REPO_URL" \
@@ -244,122 +226,169 @@ jobs:
             --filter=blob:none \
             openwrt
 
-          cd openwrt
+          cd "$OPENWRT_DIR"
 
           if [ -n "$REPO_COMMIT" ]; then
-
             git fetch \
               --depth=1 \
               origin \
               "$REPO_COMMIT"
 
             git checkout "$REPO_COMMIT"
-
           fi
 
           echo "========================================"
           echo "IMMORTALWRT"
           echo "========================================"
 
-          echo "Branch:"
-          git branch --show-current
+          echo "Repository:"
+          echo "$REPO_URL"
 
           echo
+          echo "Branch:"
+          git branch --show-current || true
 
+          echo
           echo "Commit:"
           git rev-parse HEAD
-      # ========================================================
-      # Apply Device DIY
-      #
-      # 必须在 make defconfig 前执行。
-      # ========================================================
 
-      - name: Apply Device DIY
+
+      # ==========================================================
+      # Prepare DIY Files
+      # ==========================================================
+
+      - name: Prepare DIY Files
         shell: bash
         run: |
-          set -e
+          set -Eeuo pipefail
 
           cd "$OPENWRT_DIR"
 
-          chmod +x $GITHUB_WORKSPACE/*.sh
-          cp -f $GITHUB_WORKSPACE/dts/* ./target/linux/mediatek/dts/
+          chmod +x \
+            "$GITHUB_WORKSPACE"/*.sh
+
+          if [ -d "$GITHUB_WORKSPACE/dts" ]; then
+            mkdir -p \
+              target/linux/mediatek/dts
+
+            cp -f \
+              "$GITHUB_WORKSPACE"/dts/* \
+              target/linux/mediatek/dts/
+          fi
+
+
+      # ==========================================================
+      # DIY Part 1
+      #
+      # 必须在 feeds update 之前
+      # ==========================================================
+
+      - name: DIY Part 1
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          cd "$OPENWRT_DIR"
+
+          "$GITHUB_WORKSPACE/diy-part1.sh"
+
+
+      # ==========================================================
+      # Update Feeds
+      # ==========================================================
+
+      - name: Update Feeds
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          cd "$OPENWRT_DIR"
+
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+
+      # ==========================================================
+      # Device DIY
+      #
+      # diy-part2 / qlb / ikuai
+      # 必须在 feeds update 后执行。
+      # ==========================================================
+
+      - name: Device DIY
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          cd "$OPENWRT_DIR"
+
           case "$DEVICE_INPUT" in
 
             512M)
-              echo "========================================"
-              echo "Apply TR3000 512M"
-              echo "========================================"
-
               "$GITHUB_WORKSPACE/diy-part2.sh"
               ;;
 
             256M)
-              echo "========================================"
-              echo "TR3000 256M"
-              echo "========================================"
+              # 256M profile 同样由 diy-part2.sh 创建
+              "$GITHUB_WORKSPACE/diy-part2.sh"
               ;;
 
             128M)
-              echo "========================================"
-              echo "TR3000 128M"
-              echo "========================================"
+              # 使用原有 128M config
               ;;
 
             QLB-4Pro)
-              echo "========================================"
-              echo "Apply QLB-4Pro"
-              echo "========================================"
-
               "$GITHUB_WORKSPACE/diy-qlb.sh"
               ;;
 
             ikuai-q6000-nand)
-              echo "========================================"
-              echo "Apply ikuai-q6000-nand"
-              echo "========================================"
-
               "$GITHUB_WORKSPACE/diy-ikuai-q6000-nand.sh"
               ;;
 
             all)
-              echo "========================================"
-              echo "Apply all device definitions"
-              echo "========================================"
-
-              # 512M device definition
               "$GITHUB_WORKSPACE/diy-part2.sh"
-
-              # QLB-4Pro device definition
               "$GITHUB_WORKSPACE/diy-qlb.sh"
-              
-              # ikuai-q6000-nand device definition
               "$GITHUB_WORKSPACE/diy-ikuai-q6000-nand.sh"
               ;;
+
             *)
-              echo "Unknown device: $DEVICE_INPUT"
+              echo "Unknown device:"
+              echo "$DEVICE_INPUT"
               exit 1
               ;;
 
           esac
 
-          cp -f "$CONFIG" .config
-          
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
-          
-          "$GITHUB_WORKSPACE/diy-part1.sh" 
-          "$GITHUB_WORKSPACE/diy-part3.sh"
 
-          
-          make defconfig
+      # ==========================================================
+      # Validate Config Files
+      # ==========================================================
 
-          CONFIG_HASH=$(md5sum .config | awk '{print $1}')
+      - name: Validate Config Files
+        shell: bash
+        run: |
+          set -Eeuo pipefail
 
-          echo "hash=$CONFIG_HASH" >> "$GITHUB_OUTPUT"
+          for file in \
+            "$GITHUB_WORKSPACE/config/512m.config" \
+            "$GITHUB_WORKSPACE/config/256m.config" \
+            "$GITHUB_WORKSPACE/config/128m.config" \
+            "$GITHUB_WORKSPACE/config/mt7981-QLB-4Pro.config" \
+            "$GITHUB_WORKSPACE/config/mt7986-ikuai-q6000-nand.config"
+          do
+            if [ ! -f "$file" ]; then
+              echo "Missing config:"
+              echo "$file"
+              exit 1
+            fi
+          done
 
-      # ========================================================
-      # Ccache Cache
-      # ========================================================
+
+      # ==========================================================
+      # Ccache
+      #
+      # 不再依赖错误的 steps.config-hash
+      # ==========================================================
 
       - name: Cache Ccache
         uses: actions/cache@v4
@@ -367,22 +396,23 @@ jobs:
           path: /workdir/.ccache
 
           key: >-
-            ${{ runner.os }}-ccache-
+            ${{ runner.os }}-
+            openwrt-ccache-
             ${{ env.REPO_BRANCH }}-
-            ${{ steps.config-hash.outputs.hash }}-
-            ${{ hashFiles('*.sh', 'config/*.config', 'dts/*') }}
+            ${{ hashFiles(
+              '**/*.sh',
+              'config/*.config',
+              'dts/*'
+            ) }}
 
           restore-keys: |
-            ${{ runner.os }}-ccache-${{ env.REPO_BRANCH }}-
-            ${{ runner.os }}-ccache-
+            ${{ runner.os }}-openwrt-ccache-${{ env.REPO_BRANCH }}-
+            ${{ runner.os }}-openwrt-ccache-
 
 
-      # ========================================================
+      # ==========================================================
       # Download Cache
-      #
-      # 不绑定 config。
-      # 不同设备共享下载缓存。
-      # ========================================================
+      # ==========================================================
 
       - name: Cache DL
         uses: actions/cache@v4
@@ -390,7 +420,8 @@ jobs:
           path: /workdir/openwrt/dl
 
           key: >-
-            ${{ runner.os }}-openwrt-dl-
+            ${{ runner.os }}-
+            openwrt-dl-
             ${{ env.REPO_BRANCH }}-
             ${{ hashFiles('feeds.conf.default') }}
 
@@ -399,22 +430,22 @@ jobs:
             ${{ runner.os }}-openwrt-dl-
 
 
-      # ========================================================
+      # ==========================================================
       # Configure Ccache
-      # ========================================================
+      # ==========================================================
 
       - name: Configure Ccache
         shell: bash
         run: |
-          set -e
+          set -Eeuo pipefail
 
           mkdir -p "$CCACHE_DIR"
 
           ccache \
-            --set-config=max_size="$CCACHE_MAXSIZE"
+            --set-config=cache_dir="$CCACHE_DIR"
 
           ccache \
-            --set-config=cache_dir="$CCACHE_DIR"
+            --set-config=max_size="$CCACHE_MAXSIZE"
 
           ccache \
             --set-config=compression=true
@@ -425,65 +456,68 @@ jobs:
           ccache -z
 
 
-
-
-      # ========================================================
+      # ==========================================================
       # Download
-      #
-      # 关键优化：
-      #
-      # 原模板：
-      #
-      # 512M -> download
-      # 256M -> download
-      # 128M -> download
-      # QLB  -> download
-      #
-      # 这里：
-      #
-      # 全部设备只 download 一次。
-      # ========================================================
+      # ==========================================================
 
       - name: Download Sources
         shell: bash
         run: |
-          set -e
+          set -Eeuo pipefail
 
           cd "$OPENWRT_DIR"
 
-          make download -j"$(nproc)"
+          make download \
+            -j"$(nproc)"
 
           find dl \
+            -type f \
             -size -1024c \
-            -exec rm -f {} \;
+            -delete
 
 
-      # ========================================================
-      # Compile Loop
-      # ========================================================
+      # ==========================================================
+      # Compile
+      # ==========================================================
 
-      - name: Compile Loop
+      - name: Compile
         id: compile
         shell: bash
         run: |
-          set -e
+          set -Eeuo pipefail
+
+          cd "$OPENWRT_DIR"
 
           if [ "$DEVICE_INPUT" = "all" ]; then
-            DEVICES="512M 256M 128M QLB-4Pro ikuai-q6000-nand"
+            DEVICES="
+              512M
+              256M
+              128M
+              QLB-4Pro
+              ikuai-q6000-nand
+            "
           else
             DEVICES="$DEVICE_INPUT"
           fi
 
-          mkdir -p \
+          rm -rf \
             "$GITHUB_WORKSPACE/firmware_collection"
 
-          cd "$OPENWRT_DIR"
+          mkdir -p \
+            "$GITHUB_WORKSPACE/firmware_collection"
 
 
           for DEV in $DEVICES; do
 
             echo
-            echo "::group::🚀 Building $DEV"
+            echo "========================================"
+            echo "🚀 BUILD: $DEV"
+            echo "========================================"
+
+
+            # ----------------------------------------------------
+            # Select config
+            # ----------------------------------------------------
 
             case "$DEV" in
 
@@ -502,53 +536,109 @@ jobs:
               QLB-4Pro)
                 CONFIG="$GITHUB_WORKSPACE/config/mt7981-QLB-4Pro.config"
                 ;;
-                
+
               ikuai-q6000-nand)
                 CONFIG="$GITHUB_WORKSPACE/config/mt7986-ikuai-q6000-nand.config"
                 ;;
 
               *)
-                echo "Unknown device: $DEV"
+                echo "Unknown device:"
+                echo "$DEV"
                 exit 1
                 ;;
 
             esac
 
 
-            echo "========================================"
-            echo "DEVICE: $DEV"
-            echo "CONFIG: $CONFIG"
-            echo "========================================"
+            # ----------------------------------------------------
+            # Clean previous configuration
+            # ----------------------------------------------------
 
-
-            # --------------------------------------------------
-            # 写入设备 Config
-            # --------------------------------------------------
+            rm -f .config
 
             cp -f \
               "$CONFIG" \
               .config
 
 
-            # --------------------------------------------------
-            # 根据当前 Config 生成最终配置
-            # --------------------------------------------------
+            echo
+            echo "Config:"
+            echo "$CONFIG"
+
+
+            # ----------------------------------------------------
+            # IMPORTANT
+            #
+            # diy-part3 必须在 cp config 后执行。
+            #
+            # 它会：
+            # 1. 添加 PassWall feeds
+            # 2. 更新 PassWall feeds
+            # 3. 安装 PassWall
+            # 4. 修改当前 .config
+            #
+            # 如果放在这里之前，后面的 cp config 会把
+            # PassWall 配置全部覆盖。
+            # ----------------------------------------------------
+
+            "$GITHUB_WORKSPACE/diy-part3.sh"
+
+
+            # ----------------------------------------------------
+            # Final config
+            # ----------------------------------------------------
 
             make defconfig
 
 
-            # --------------------------------------------------
-            # 显示 Target
-            # --------------------------------------------------
+            # ----------------------------------------------------
+            # 显示当前设备 Target
+            # ----------------------------------------------------
 
-            grep '^CONFIG_TARGET_' .config \
-              | grep '=y' \
+            echo
+            echo "TARGET:"
+            grep \
+              '^CONFIG_TARGET_.*=y' \
+              .config \
               || true
 
 
-            # --------------------------------------------------
-            # 编译
-            # --------------------------------------------------
+            echo
+            echo "PROFILE:"
+            grep \
+              '^CONFIG_TARGET_PROFILE=' \
+              .config \
+              || true
+
+
+            echo
+            echo "PASSWALL:"
+            grep \
+              '^CONFIG_PACKAGE_luci-app-passwall=' \
+              .config \
+              || true
+
+
+            # ----------------------------------------------------
+            # 清理当前 target 的旧输出
+            #
+            # 避免后面的设备收集到前一个设备的镜像。
+            # ----------------------------------------------------
+
+            rm -rf \
+              bin/targets/mediatek/filogic
+
+            mkdir -p \
+              bin/targets/mediatek/filogic
+
+
+            # ----------------------------------------------------
+            # Build
+            # ----------------------------------------------------
+
+            echo
+            echo "Start build: $DEV"
+
 
             if make \
               -j"$(nproc)" \
@@ -556,16 +646,15 @@ jobs:
               CXX="ccache g++"
             then
 
-              echo "========================================"
-              echo "✅ $DEV BUILD SUCCESS"
-              echo "========================================"
+              echo
+              echo "✅ BUILD SUCCESS: $DEV"
 
             else
 
-              echo "========================================"
-              echo "⚠️ $DEV PARALLEL BUILD FAILED"
-              echo "Retry with V=s"
-              echo "========================================"
+              echo
+              echo "⚠️ Parallel build failed."
+              echo "Retry with -j1 V=s"
+
 
               make \
                 -j1 \
@@ -576,29 +665,69 @@ jobs:
             fi
 
 
-            # --------------------------------------------------
-            # 收集当前设备
-            # --------------------------------------------------
+            # ----------------------------------------------------
+            # Collect current device
+            # ----------------------------------------------------
 
-            mkdir -p \
-              "$GITHUB_WORKSPACE/firmware_collection/$DEV"
+            OUTDIR="$GITHUB_WORKSPACE/firmware_collection/$DEV"
+
+            mkdir -p "$OUTDIR"
 
 
-            find bin/targets \
+            find \
+              bin/targets/mediatek/filogic \
               -type f \
               \( \
                 -name "*.bin" \
                 -o -name "*.itb" \
                 -o -name "*.img" \
+                -o -name "*.ubi" \
                 -o -name "*.tar" \
                 -o -name "*.gz" \
                 -o -name "*.zip" \
               \) \
-              -exec cp -f {} \
-              "$GITHUB_WORKSPACE/firmware_collection/$DEV/" \;
+              -exec cp -f {} "$OUTDIR/" \;
 
 
-            echo "::endgroup::"
+            # ----------------------------------------------------
+            # Verify output
+            # ----------------------------------------------------
+
+            if ! find "$OUTDIR" \
+                -type f \
+                -print \
+                | grep -q .; then
+
+              echo
+              echo "ERROR: No firmware generated for:"
+              echo "$DEV"
+
+              find \
+                bin/targets/mediatek/filogic \
+                -type f \
+                | sort \
+                || true
+
+              exit 1
+
+            fi
+
+
+            echo
+            echo "Firmware generated for $DEV:"
+
+            find "$OUTDIR" \
+              -maxdepth 1 \
+              -type f \
+              -printf "%f\n" \
+              | sort
+
+
+            # ----------------------------------------------------
+            # Remove .config before next device
+            # ----------------------------------------------------
+
+            rm -f .config
 
           done
 
@@ -606,9 +735,9 @@ jobs:
           echo "status=success" >> "$GITHUB_OUTPUT"
 
 
-      # ========================================================
+      # ==========================================================
       # Ccache Statistics
-      # ========================================================
+      # ==========================================================
 
       - name: Ccache Statistics
         if: always()
@@ -617,23 +746,23 @@ jobs:
           ccache -s || true
 
 
-      # ========================================================
-      # 上传 Artifact
-      # ========================================================
+      # ==========================================================
+      # Artifact
+      # ==========================================================
 
       - name: Upload Artifacts
         if: steps.compile.outputs.status == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: ImmortalWrt_${{ env.DEVICE_INPUT }}
-          path: ${{ github.workspace }}/firmware_collection/
+          path: firmware_collection/
           if-no-files-found: error
           compression-level: 9
 
 
-      # ========================================================
-      # Release
-      # ========================================================
+      # ==========================================================
+      # Release Information
+      # ==========================================================
 
       - name: Generate Release
         id: tag
@@ -642,32 +771,41 @@ jobs:
           env.UPLOAD_RELEASE == 'true'
         shell: bash
         run: |
-          set -e
+          set -Eeuo pipefail
 
-          BUILD_TIME=$(date +"%Y.%m.%d-%H%M")
+          BUILD_TIME="$(date '+%Y.%m.%d-%H%M%S')"
 
-          echo "release_tag=$BUILD_TIME" >> "$GITHUB_OUTPUT"
+          RELEASE_TAG="${BUILD_TIME}-${GITHUB_RUN_NUMBER}"
+
+          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+
+          COMMIT="$(
+            cd "$OPENWRT_DIR"
+            git rev-parse --short HEAD
+          )"
 
           cat > release.txt << EOF
           ## 📦 ImmortalWrt Firmware
 
           **Build Time:** $BUILD_TIME
 
-          **Branch:** $REPO_BRANCH
-
-          **Commit:** $(cd "$OPENWRT_DIR" && git rev-parse --short HEAD)
-
           **Device:** $DEVICE_INPUT
 
+          **Branch:** $REPO_BRANCH
+
+          **Commit:** $COMMIT
+
           **Repository:** $REPO_URL
+
+          **Workflow Run:** $GITHUB_RUN_NUMBER
           EOF
 
           echo "status=success" >> "$GITHUB_OUTPUT"
 
 
-      # ========================================================
-      # Upload Release
-      # ========================================================
+      # ==========================================================
+      # Release
+      # ==========================================================
 
       - name: Upload Release
         if: steps.tag.outputs.status == 'success'
@@ -681,6 +819,7 @@ jobs:
             firmware_collection/**/*.bin
             firmware_collection/**/*.itb
             firmware_collection/**/*.img
+            firmware_collection/**/*.ubi
             firmware_collection/**/*.tar
             firmware_collection/**/*.gz
             firmware_collection/**/*.zip
@@ -689,23 +828,26 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
-      # ========================================================
-      # 清理旧 Workflow
-      # ========================================================
+      # ==========================================================
+      # Clean Workflow Runs
+      # ==========================================================
 
       - name: Clean Old Runs
+        if: always()
         uses: Mattraks/delete-workflow-runs@v2
         with:
           retain_days: 0
           keep_minimum_runs: 9
 
 
-      # ========================================================
-      # 清理旧 Release
-      # ========================================================
+      # ==========================================================
+      # Clean Releases
+      # ==========================================================
 
       - name: Clean Old Releases
-        if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+        if: >
+          env.UPLOAD_RELEASE == 'true' &&
+          !cancelled()
         uses: dev-drprasad/delete-older-releases@v0.3.4
         with:
           keep_latest: 3
