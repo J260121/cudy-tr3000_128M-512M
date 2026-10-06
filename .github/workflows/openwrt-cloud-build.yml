@@ -281,7 +281,7 @@ jobs:
 
           cd "$OPENWRT_DIR"
 
-          cp -f $GITHUB_WORKSPACE/*.sh ./
+          chmod +x $GITHUB_WORKSPACE/*.sh
           cp -f $GITHUB_WORKSPACE/dts/* ./target/linux/mediatek/dts/
           case "$DEVICE_INPUT" in
 
