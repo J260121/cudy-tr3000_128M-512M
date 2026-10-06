@@ -320,7 +320,7 @@ jobs:
 
               "$GITHUB_WORKSPACE/diy-ikuai-q6000-nand.sh"
               ;;
-			  
+
             all)
               echo "========================================"
               echo "Apply all device definitions"
@@ -357,7 +357,7 @@ jobs:
           CONFIG_HASH=$(md5sum .config | awk '{print $1}')
 
           echo "hash=$CONFIG_HASH" >> "$GITHUB_OUTPUT"
-		  
+
       # ========================================================
       # Ccache Cache
       # ========================================================
@@ -371,7 +371,7 @@ jobs:
             ${{ runner.os }}-ccache-
             ${{ env.REPO_BRANCH }}-
             ${{ steps.config-hash.outputs.hash }}-
-            ${{ hashFiles('diy-*.sh', 'config/*.config', 'dts/*') }}
+            ${{ hashFiles('*.sh', 'config/*.config', 'dts/*') }}
 
           restore-keys: |
             ${{ runner.os }}-ccache-${{ env.REPO_BRANCH }}-
@@ -424,6 +424,8 @@ jobs:
             --set-config=compression_level=6
 
           ccache -z
+
+
 
 
       # ========================================================
